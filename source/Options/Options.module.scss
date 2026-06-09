@@ -1,0 +1,138 @@
+@use "../styles/fonts";
+@use "../styles/reset";
+
+:global(body) {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  padding: 0;
+}
+
+.options {
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  margin: 0;
+  padding: 0;
+
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 50px;
+    width: 100%;
+    border-bottom: 1px solid var(--color-accent-pink);
+    box-shadow: var(--shadowMd);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    font-size: 1.2rem;
+
+    background:
+      radial-gradient(
+        circle at 15% 12%,
+        rgb(var(--color-white-rgb) / 0.04),
+        transparent 20%
+      ),
+      radial-gradient(
+        circle at 88% 92%,
+        rgb(var(--color-accent-pink-rgb) / 0.08),
+        transparent 22%
+      ),
+      linear-gradient(180deg, var(--page-bg) 0%, var(--page-bg-deep) 100%);
+    color: var(--color-white);
+
+    .originSite {
+      height: 30px;
+      width: 30px;
+    }
+
+    .selectInformation {
+      display: flex;
+      gap: 10px;
+    }
+
+    .errorBlock {
+      display: flex;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .btnBlock {
+      display: flex;
+      gap: 40px;
+    }
+
+    .btnAllDownload,
+    .filterError {
+      cursor: pointer;
+      width: 35px;
+      height: 35px;
+      transition: all 0.8s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  .main {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 25px;
+    flex-wrap: wrap;
+    padding-top: 60px;
+  }
+
+  .override {
+    position: fixed; /* Лучше, чем absolute: чтобы всегда поверх */
+    z-index: 10000; /* Гарантия поверх всего */
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(2px);
+    background-color: rgba(31, 30, 34, 0.896);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+
+    .close {
+      position: absolute;
+      top: 40px;
+      right: 60px;
+
+      &:hover {
+        transform: rotate(360deg);
+      }
+    }
+
+    .close,
+    .btnDownload {
+      width: 60px;
+      height: 60px;
+      transition: all 0.8s ease;
+    }
+
+    .btnDownload:hover {
+      transform: scale(1.1);
+    }
+
+    img {
+      width: 80%;
+      max-height: 80%;
+      object-fit: contain;
+    }
+  }
+}

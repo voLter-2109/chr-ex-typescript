@@ -1,0 +1,49 @@
+.cardItem {
+  width: 250px;
+  border: 1px solid var(--color-accent-pink);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 370px;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 5px;
+  gap: 10p;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadowMd);
+
+  &:hover {
+    box-shadow: var(--shadowLg);
+  }
+
+  .image {
+    object-fit: cover;
+    height: 300px;
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .btnBlock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    .error {
+      font-size: 1.2rem;
+      color: var(--color-accent-pink);
+    }
+
+    .btnDownload {
+      width: 40px;
+      height: 40px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+}

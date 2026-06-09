@@ -1,0 +1,22 @@
+.card {
+  padding: 18px;
+}
+
+.large {
+  padding: 28px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+
+  .title {
+    font-size: 16px;
+    text-transform: uppercase;
+    color: var(--color-accent-pink);
+    letter-spacing: 0.1em;
+    font-weight: 300;
+  }
+}
