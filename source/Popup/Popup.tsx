@@ -1,9 +1,10 @@
 import type { FC } from "react";
 import { useEffect, useState } from "react";
+import { ToastContainer } from "react-toastify";
 import browser, { Tabs } from "webextension-polyfill";
 import "../styles/global.css";
-import { TMainDataProps } from "../types/mainButton";
 import {
+  ExtensionMessage,
   GetPageInfoMessage,
   GrabImagesInfoMessage,
   GrabImagesResponseMessage,
@@ -11,10 +12,16 @@ import {
   PageInfo,
   PageInfoResponseMessage,
 } from "../types/messages";
-import { StorageSchema } from "../types/storage";
+import { TabData, TMainDataProps } from "../types/popup";
+import { ExportOptionKey, ExportOptions, TSaveImage } from "../types/storage";
 import handleReloadTab from "../utils/handleReloadPage";
 import openWebPage from "../utils/openNewTab";
-import { clearAllStorage, handleStorageChanged } from "../utils/storage";
+import {
+  clearAllStorage,
+  getOptions,
+  handleStorageChanged,
+} from "../utils/storage";
+import { handleCopyUrls, notifyError, notifySuccess } from "../utils/toastify";
 import { Button } from "./components/Button/Button";
 import { TabInfo } from "./components/TabInfo/TabInfo";
 import styles from "./Popup.module.scss";
@@ -22,11 +29,20 @@ import styles from "./Popup.module.scss";
 // Note: browser.tabs.sendMessage() sends to content script in specific tab
 // browser.runtime.sendMessage() sends to background script
 
-interface TabData {
-  title: string;
-  url: string;
-  favIconUrl?: string;
-}
+const exportOptionsList: { key: ExportOptionKey; label: string }[] = [
+  { key: "copyToClipboard", label: "Скопировать в буфер обмена" },
+  { key: "downloadFile", label: "Скачать файл с ссылками" },
+  {
+    key: "noOpenOptionsPage",
+    label: "Не открывать страницу галереи",
+  },
+];
+
+const defaultExportOptions: ExportOptions = {
+  copyToClipboard: false,
+  downloadFile: false,
+  noOpenOptionsPage: false,
+};
 
 const mainDataFunction: TMainDataProps = {
   reactor: {
@@ -52,10 +68,9 @@ const mainDataFunction: TMainDataProps = {
 const Popup: FC = () => {
   const [tabInfo, setTabInfo] = useState<TabData | null>(null);
   const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
-  const [resultGrab, setResultGrab] = useState<string>("");
-  const [storage, setStorage] = useState<[string, StorageSchema][] | null>(
-    null,
-  );
+  const [storage, setStorage] = useState<TSaveImage[] | null>(null);
+  const [exportOptions, setExportOptions] =
+    useState<ExportOptions>(defaultExportOptions);
   const arrayMainData = Object.values(mainDataFunction);
 
   useEffect(() => {
@@ -90,13 +105,7 @@ const Popup: FC = () => {
 
   useEffect(() => {
     handleStorageChanged().then(setStorage);
-
-    browser.storage.onChanged.addListener(handleStorageChanged);
-
-    // Отписка на размонтирование
-    return () => {
-      browser.storage.onChanged.removeListener(handleStorageChanged);
-    };
+    getOptions().then((res) => res && setExportOptions(res));
   }, []);
 
   function handleGrabImages({ siteName, selector }: GrabInfo) {
@@ -122,22 +131,54 @@ const Popup: FC = () => {
               const res = response as GrabImagesResponseMessage;
               console.log(res);
               if (res.type === "GRAB_IMAGES_INFO_RESPONSE" && res?.data) {
-                setResultGrab(res.data.result);
-                handleStorageChanged();
-                openWebPage(`/Options/options.html?TabId=${res.data.tabId}`);
+                handleStorageChanged().then(setStorage);
+
+                if (exportOptions.copyToClipboard && res.data.data)
+                  handleCopyUrls(
+                    res.data.data.imageUrls.map((item) => {
+                      return item.large;
+                    }),
+                  );
+                if (!exportOptions.noOpenOptionsPage) {
+                  openWebPage(`/Options/options.html?TabId=${res.data.tabId}`);
+                }
               }
             });
         }
       })
       .catch((err) => {
-        console.log("sendMessage error:", err);
+        notifyError(err);
       });
   }
+
+  const handleChange =
+    (option: ExportOptionKey) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setExportOptions((prev) => {
+        const newOptions = {
+          ...prev,
+          [option]: e.target.checked,
+        };
+        browser.tabs
+          .query({ active: true, currentWindow: true })
+          .then((tabs) => {
+            const tab = tabs[0];
+            if (tab && tab.id) {
+              console.log("change setoptions - handleChange");
+              browser.tabs.sendMessage<ExtensionMessage>(tab.id, {
+                type: "SET_OPTIONS",
+                data: newOptions,
+              });
+            }
+          });
+
+        return newOptions;
+      });
+    };
 
   return (
     <section className={styles.popup}>
       <header className={styles.header}>
-        <h1 className={styles.title}>IMAGE GRAB</h1>
+        <h1 className={styles.title}>🦄 GraBber</h1>
       </header>
       <div className={styles.line} />
       {tabInfo && (
@@ -170,7 +211,20 @@ const Popup: FC = () => {
           </div>
         </div>
       )}
-      <span> Result:{resultGrab}</span>
+      <div className={styles.options}>
+        <h3>Options</h3>
+        {exportOptionsList.map(({ key, label }) => (
+          <label key={key} style={{ display: "block", marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={exportOptions[key]}
+              onChange={handleChange(key)}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+
       {arrayMainData.map((item, index) => {
         return (
           <Button
@@ -194,39 +248,64 @@ const Popup: FC = () => {
           <button
             className={styles.clearBtn}
             onClick={() => {
-              clearAllStorage().then(() => setStorage(null));
+              clearAllStorage()
+                .then(() => setStorage(null))
+                .then(() => {
+                  notifySuccess("success");
+                });
             }}
           >
             <span>clear history</span>
           </button>
         </div>
         {storage &&
-          storage.map(([tabId, item]) => (
-            <div key={tabId} className={styles.main}>
-              <div className={styles.infoBlock}>
-                <img src={item.faviconIconUrl} alt={item.title} />
-                <span>{item.title}</span>
+          storage.flatMap((recordObj) =>
+            Object.entries(recordObj).map(([tabId, item]) => (
+              <div key={tabId} className={styles.main}>
+                <div className={styles.infoBlock}>
+                  <img src={item.faviconIconUrl} alt={item.title} />
+                  <span>{item.title}</span>
+                </div>
+                <div className={styles.btnBlock}>
+                  <a
+                    className={styles.historyBtn}
+                    href={item.tabUrl}
+                    target="_blank"
+                    title={"open origin webpage"}
+                  >
+                    <span>origin</span>
+                  </a>
+                  <button
+                    className={styles.historyBtn}
+                    onClick={(): Promise<Tabs.Tab> =>
+                      openWebPage(`/Options/options.html?TabId=${tabId}`)
+                    }
+                    title={"open gallery page"}
+                  >
+                    <span>gallery</span>
+                  </button>
+                  <button
+                    className={styles.historyBtn}
+                    onClick={() =>
+                      handleCopyUrls(item.imageUrls.map((item) => item.large))
+                    }
+                    title={"copy urls array"}
+                  >
+                    <span>copy</span>
+                  </button>
+                  <button
+                    className={styles.historyBtn}
+                    onClick={() => {}}
+                    title={"download urls file"}
+                  >
+                    <span>file</span>
+                  </button>
+                </div>
               </div>
-              <div className={styles.btnBlock}>
-                <a
-                  className={styles.historyBtn}
-                  href={item.tabUrl}
-                  target="_blank"
-                >
-                  <span>visit page</span>
-                </a>
-                <button
-                  className={styles.historyBtn}
-                  onClick={(): Promise<Tabs.Tab> =>
-                    openWebPage(`/Options/options.html?TabId=${tabId}`)
-                  }
-                >
-                  <span>open gallary</span>
-                </button>
-              </div>
-            </div>
-          ))}
+            )),
+          )}
       </div>
+      <ToastContainer autoClose={2000} />
     </section>
   );
 };

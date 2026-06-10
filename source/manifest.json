@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "chrome extensions V2",
+  "name": "GraBber V2",
   "version": "2.0.0",
 
   "icons": {
-    "16": "assets/icons/favicon-16.png",
+    "32": "assets/icons/favicon-32.png",
     "48": "assets/icons/favicon-48.png",
+    "64": "assets/icons/favicon-64.png",
     "128": "assets/icons/favicon-128.png"
   },
-  "description": "Sample description",
-  "short_name": "Sample Name",
+  "description": "image grab",
+  "short_name": "GraBber",
 
   "permissions": ["activeTab", "storage", "downloads"],
 
@@ -30,11 +31,12 @@
   "action": {
     "default_popup": "Popup/popup.html",
     "default_icon": {
-      "16": "assets/icons/favicon-16.png",
+      "32": "assets/icons/favicon-32.png",
       "48": "assets/icons/favicon-48.png",
+      "64": "assets/icons/favicon-64.png",
       "128": "assets/icons/favicon-128.png"
     },
-    "default_title": "tiny title"
+    "default_title": "GraBber"
   },
 
   "__chrome__options_page": "Options/options.html",

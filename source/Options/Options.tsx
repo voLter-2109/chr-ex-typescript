@@ -15,6 +15,7 @@ import {
   StartDownloadBatch,
 } from "../types/messages";
 import { StorageSchema } from "../types/storage";
+import { getSaveImageByTabId } from "../utils/storage";
 import styles from "./Options.module.scss";
 
 const Options: FC = () => {
@@ -90,10 +91,8 @@ const Options: FC = () => {
 
   useEffect(() => {
     if (!tabId) return;
-
-    browser.storage.local.get(tabId).then((res) => {
-      const data = res[tabId] as StorageSchema | undefined;
-      setImageUrl(data);
+    getSaveImageByTabId(Number(tabId)).then((res) => {
+      if (res) setImageUrl(res);
     });
   }, [tabId]);
 

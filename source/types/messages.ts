@@ -1,5 +1,5 @@
-import { TMainSiteName } from "./mainButton";
-import { StorageSchema } from "./storage";
+import { TMainSiteName } from "./popup";
+import { ExportOptions, StorageSchema } from "./storage";
 
 export interface PageInfo {
   url: string;
@@ -34,7 +34,12 @@ export interface GrabImagesInfoMessage {
 
 export interface GrabImagesResponseMessage {
   type: "GRAB_IMAGES_INFO_RESPONSE";
-  data: { success: boolean; result: string; tabId: number | null };
+  data: {
+    success: boolean;
+    result: string;
+    tabId: number | null;
+    data: StorageSchema | null;
+  };
 }
 
 export interface OpenNewTab {
@@ -60,6 +65,15 @@ export interface DownloadBatch {
   errorUrl: string[];
 }
 
+export interface SetOptions {
+  type: "SET_OPTIONS";
+  data: ExportOptions;
+}
+
+export interface GetOptions {
+  type: "GET_OPTIONS";
+}
+
 export type ExtensionMessage =
   | GetPageInfoMessage
   | PageInfoResponseMessage
@@ -67,4 +81,6 @@ export type ExtensionMessage =
   | GrabImagesResponseMessage
   | OpenNewTab
   | DowloadOneImage
-  | StartDownloadBatch;
+  | StartDownloadBatch
+  | SetOptions
+  | GetOptions;

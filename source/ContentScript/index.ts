@@ -39,10 +39,14 @@ browser.runtime.onMessage.addListener(async (message: unknown) => {
       return res;
     }
 
+    if (msg.type === "SET_OPTIONS") {
+      await setStorage({ options: msg.data });
+    }
+
     if (msg.type === "GRAB_IMAGES_INFO") {
       const result = getGrabImage(msg.data);
       if (result.success && result.saveData) {
-        await setStorage({ [msg.data.tabId]: result.saveData });
+        await setStorage({ saveImage: { [msg.data.tabId]: result.saveData } });
       }
 
       const res: GrabImagesResponseMessage = {
@@ -51,6 +55,7 @@ browser.runtime.onMessage.addListener(async (message: unknown) => {
           success: result.success,
           result: result.result,
           tabId: result.saveData?.tabId || null,
+          data: result.saveData || null,
         },
       };
       return res;

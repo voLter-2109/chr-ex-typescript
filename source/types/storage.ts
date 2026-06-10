@@ -6,12 +6,16 @@ export interface StorageSchema {
   tabId: number;
 }
 
-export const defaultStorage: Record<number, StorageSchema> = {
-  0: {
-    title: "",
-    tabUrl: "",
-    faviconIconUrl: "",
-    imageUrls: [{ large: "", small: "" }],
-    tabId: 0,
-  },
+export type ExportOptionKey =
+  | "copyToClipboard"
+  | "downloadFile"
+  | "noOpenOptionsPage";
+
+export type ExportOptions = Record<ExportOptionKey, boolean>;
+
+export type TSaveImage = Record<number, StorageSchema>;
+
+export type TSetStorage = {
+  options?: ExportOptions;
+  saveImage?: TSaveImage ;
 };

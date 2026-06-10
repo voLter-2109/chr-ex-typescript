@@ -9,3 +9,9 @@ export type TMainDataProps = Record<
     closest: string[] | null;
   }
 >;
+
+export interface TabData {
+  title: string;
+  url: string;
+  favIconUrl?: string;
+}
