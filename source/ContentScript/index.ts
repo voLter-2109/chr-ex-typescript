@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import browser from "webextension-polyfill";
 import {
   ExtensionMessage,
@@ -6,6 +7,7 @@ import {
   PageInfoResponseMessage,
 } from "../types/messages";
 import getGrabImage from "../utils/getGrabImage";
+import { saveIfUnique } from "../utils/saveIfUnique";
 import { setStorage } from "../utils/storage";
 
 // Collect page information (word count, links, images)
@@ -31,6 +33,10 @@ browser.runtime.onMessage.addListener(async (message: unknown) => {
   try {
     const msg = message as ExtensionMessage;
 
+    if (msg.type === "PING") {
+      return { type: "PONG" };
+    }
+
     if (msg.type === "GET_PAGE_INFO") {
       const res: PageInfoResponseMessage = {
         type: "PAGE_INFO_RESPONSE",
@@ -45,8 +51,12 @@ browser.runtime.onMessage.addListener(async (message: unknown) => {
 
     if (msg.type === "GRAB_IMAGES_INFO") {
       const result = getGrabImage(msg.data);
+      const tabUuid = uuidv4();
+      let checkUnique = false;
       if (result.success && result.saveData) {
-        await setStorage({ saveImage: { [msg.data.tabId]: result.saveData } });
+        saveIfUnique({ saveData: result.saveData, uuid: tabUuid }).then(
+          (res) => (checkUnique = res),
+        );
       }
 
       const res: GrabImagesResponseMessage = {
@@ -54,8 +64,9 @@ browser.runtime.onMessage.addListener(async (message: unknown) => {
         data: {
           success: result.success,
           result: result.result,
-          tabId: result.saveData?.tabId || null,
+          tabUuid: tabUuid,
           data: result.saveData || null,
+          checkUnique,
         },
       };
       return res;

@@ -12,7 +12,7 @@
   "description": "image grab",
   "short_name": "GraBber",
 
-  "permissions": ["activeTab", "storage", "downloads"],
+  "permissions": ["activeTab", "storage", "downloads", "scripting"],
 
   "optional_permissions": [],
 

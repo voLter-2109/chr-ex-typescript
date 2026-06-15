@@ -38,6 +38,15 @@
   box-shadow: var(--shadowSm);
 }
 
+h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  float: left;
+  padding-right: 10px;
+  margin: 0;
+}
+
 .options {
   border-radius: 12px;
   padding: 10px;
@@ -45,16 +54,11 @@
   border-bottom: 1px solid var(--color-accent-pink);
   box-shadow: var(--shadowSm);
 
-  h3 {
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
   label {
     display: flex !important;
     align-items: center;
     gap: 10px;
+    width: 100%;
   }
 }
 

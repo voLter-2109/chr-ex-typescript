@@ -1,21 +1,23 @@
+export type ImagePair = { large: string; small: string };
+
 export interface StorageSchema {
+  tabId: number;
   title: string;
   tabUrl: string;
   faviconIconUrl: string;
-  imageUrls: { large: string; small: string }[];
-  tabId: number;
+  imageUrls: ImagePair[];
 }
 
 export type ExportOptionKey =
-  | "copyToClipboard"
   | "downloadFile"
+  | "copyToClipboard"
   | "noOpenOptionsPage";
 
 export type ExportOptions = Record<ExportOptionKey, boolean>;
 
-export type TSaveImage = Record<number, StorageSchema>;
+export type TSaveImage = Record<string, StorageSchema>;
 
 export type TSetStorage = {
+  saveImage?: TSaveImage;
   options?: ExportOptions;
-  saveImage?: TSaveImage ;
 };

@@ -20,7 +20,7 @@ import styles from "./Options.module.scss";
 
 const Options: FC = () => {
   const params = new URLSearchParams(window.location.search);
-  const tabId = params.get("TabId");
+  const tabId = params.get("tabUuid");
 
   const [errorUrls, setErrorUrls] = useState<string[] | null>(null);
   const [filterErrorUrls, setFilterErrorUrls] = useState<boolean>(false);
@@ -91,7 +91,7 @@ const Options: FC = () => {
 
   useEffect(() => {
     if (!tabId) return;
-    getSaveImageByTabId(Number(tabId)).then((res) => {
+    getSaveImageByTabId(tabId).then((res) => {
       if (res) setImageUrl(res);
     });
   }, [tabId]);

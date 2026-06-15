@@ -10,8 +10,8 @@ export interface PageInfo {
 }
 
 export interface GrabInfo {
-  siteName: TMainSiteName;
   selector: string;
+  siteName: TMainSiteName;
 }
 
 export interface GrabInfoMessage
@@ -35,9 +35,10 @@ export interface GrabImagesInfoMessage {
 export interface GrabImagesResponseMessage {
   type: "GRAB_IMAGES_INFO_RESPONSE";
   data: {
-    success: boolean;
     result: string;
-    tabId: number | null;
+    tabUuid: string;
+    success: boolean;
+    checkUnique: boolean;
     data: StorageSchema | null;
   };
 }
@@ -59,9 +60,9 @@ export interface StartDownloadBatch {
 
 export interface DownloadBatch {
   type: "DOWNLOAD_PROGRESS";
-  completed: number;
   total: number;
   finished: boolean;
+  completed: number;
   errorUrl: string[];
 }
 
@@ -74,13 +75,23 @@ export interface GetOptions {
   type: "GET_OPTIONS";
 }
 
+export interface Ping {
+  type: "PING";
+}
+
+export interface Pong {
+  type: "PONG";
+}
+
 export type ExtensionMessage =
-  | GetPageInfoMessage
+  | GrabImagesResponseMessage
   | PageInfoResponseMessage
   | GrabImagesInfoMessage
-  | GrabImagesResponseMessage
-  | OpenNewTab
-  | DowloadOneImage
   | StartDownloadBatch
+  | GetPageInfoMessage
+  | DowloadOneImage
+  | OpenNewTab
   | SetOptions
-  | GetOptions;
+  | GetOptions
+  | Ping
+  | Pong;

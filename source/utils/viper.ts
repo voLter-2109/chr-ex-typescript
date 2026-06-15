@@ -1,5 +1,5 @@
 import { GrabInfoMessage } from "../types/messages";
-import { StorageSchema } from "../types/storage";
+import { ImagePair, StorageSchema } from "../types/storage";
 
 const excludeExts = ["gif"];
 
@@ -28,8 +28,8 @@ function fixImageUrl(imageSrc: string, index: number): string {
 }
 
 export default function getVipergirlsImages(props: GrabInfoMessage): {
-  success: boolean;
   result: string;
+  success: boolean;
   saveData: StorageSchema | null;
 } {
   const { selector } = props;
@@ -44,24 +44,22 @@ export default function getVipergirlsImages(props: GrabInfoMessage): {
     ).filter((img) => img.closest('[id^="post_message_"]') !== null);
   }
 
-  if (!images.length)
+  if (!images.length) {
     return {
       success: false,
       result: "image not found",
       saveData: null,
     };
+  }
 
   const srcArr = [...new Set(images.map((i) => i.src))];
-  const urls = srcArr.reduce<{ large: string; small: string }[]>(
-    (acc, image, index) => {
-      if (!hasExcludedExt(image, excludeExts)) {
-        const newUrl = fixImageUrl(image, index);
-        acc.push({ large: new URL(newUrl).href, small: image });
-      }
-      return acc;
-    },
-    [],
-  );
+  const urls = srcArr.reduce<ImagePair[]>((acc, image, index) => {
+    if (!hasExcludedExt(image, excludeExts)) {
+      const newUrl = fixImageUrl(image, index);
+      acc.push({ large: new URL(newUrl).href, small: image });
+    }
+    return acc;
+  }, []);
 
   const saveData: StorageSchema = {
     ...props,

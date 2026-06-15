@@ -14,12 +14,13 @@ import {
 } from "../types/messages";
 import { TabData, TMainDataProps } from "../types/popup";
 import { ExportOptionKey, ExportOptions, TSaveImage } from "../types/storage";
+import { ensureOnActiveTab } from "../utils/ensureContentScript";
 import handleReloadTab from "../utils/handleReloadPage";
 import openWebPage from "../utils/openNewTab";
 import {
   clearAllStorage,
   getOptions,
-  handleStorageChanged,
+  getSaveImageGallery,
 } from "../utils/storage";
 import { handleCopyUrls, notifyError, notifySuccess } from "../utils/toastify";
 import { Button } from "./components/Button/Button";
@@ -44,7 +45,7 @@ const defaultExportOptions: ExportOptions = {
   noOpenOptionsPage: false,
 };
 
-const mainDataFunction: TMainDataProps = {
+const mainSiteDataFunction: TMainDataProps = {
   reactor: {
     title: "reactor",
     textButtom: "reactor",
@@ -57,6 +58,9 @@ const mainDataFunction: TMainDataProps = {
     selector: "blockquote img",
     closest: ['[id^="post_message_"]'],
   },
+};
+
+const mainOwerDataFunction: TMainDataProps = {
   selector: {
     title: "selector",
     textButtom: "JS selector",
@@ -71,7 +75,9 @@ const Popup: FC = () => {
   const [storage, setStorage] = useState<TSaveImage[] | null>(null);
   const [exportOptions, setExportOptions] =
     useState<ExportOptions>(defaultExportOptions);
-  const arrayMainData = Object.values(mainDataFunction);
+
+  const arraySiteMainData = Object.values(mainSiteDataFunction);
+  const arrayOwerMainData = Object.values(mainOwerDataFunction);
 
   useEffect(() => {
     // Get current tab info
@@ -90,6 +96,7 @@ const Popup: FC = () => {
             .sendMessage<GetPageInfoMessage>(tab.id, { type: "GET_PAGE_INFO" })
             .then((response: unknown) => {
               const res = response as PageInfoResponseMessage;
+              console.log("PAGE_INFO_RESPONSE");
               console.log(res);
               if (res.type === "PAGE_INFO_RESPONSE" && res?.data) {
                 setPageInfo(res.data);
@@ -104,51 +111,72 @@ const Popup: FC = () => {
   }, []);
 
   useEffect(() => {
-    handleStorageChanged().then(setStorage);
+    getSaveImageGallery().then(setStorage);
     getOptions().then((res) => res && setExportOptions(res));
   }, []);
 
   function handleGrabImages({ siteName, selector }: GrabInfo) {
-    console.log(siteName);
-    browser.tabs
-      .query({ active: true, currentWindow: true })
-      .then((tabs) => {
-        const tab = tabs[0];
-        if (tab && tab.id) {
-          browser.tabs
-            .sendMessage<GrabImagesInfoMessage>(tab.id, {
-              type: "GRAB_IMAGES_INFO",
-              data: {
-                selector,
-                siteName,
-                tabId: tab.id,
-                title: tab.title || "Unknown",
-                tabUrl: tab.url || "Unknown",
-                faviconIconUrl: tab.favIconUrl || "",
-              },
-            })
-            .then((response: unknown) => {
-              const res = response as GrabImagesResponseMessage;
-              console.log(res);
-              if (res.type === "GRAB_IMAGES_INFO_RESPONSE" && res?.data) {
-                handleStorageChanged().then(setStorage);
+    ensureOnActiveTab()
+      .then((res) => {
+        if (res.ok && res.tab) {
+          const { tab } = res;
 
-                if (exportOptions.copyToClipboard && res.data.data)
-                  handleCopyUrls(
-                    res.data.data.imageUrls.map((item) => {
-                      return item.large;
-                    }),
-                  );
-                if (!exportOptions.noOpenOptionsPage) {
-                  openWebPage(`/Options/options.html?TabId=${res.data.tabId}`);
+          if (tab.id) {
+            browser.tabs
+              .sendMessage<GrabImagesInfoMessage>(tab.id, {
+                type: "GRAB_IMAGES_INFO",
+                data: {
+                  selector,
+                  siteName,
+                  tabId: tab.id,
+                  title: tab.title || "Unknown",
+                  tabUrl: tab.url || "Unknown",
+                  faviconIconUrl: tab.favIconUrl || "",
+                },
+              })
+              .then((response: unknown) => {
+                const res = response as GrabImagesResponseMessage;
+                if (
+                  res.type === "GRAB_IMAGES_INFO_RESPONSE" &&
+                  res.data.success &&
+                  res.data.data?.imageUrls
+                ) {
+                  console.log("GRAB_IMAGES_INFO_RESPONSE");
+                  console.log(res);
+                  getSaveImageGallery().then(setStorage);
+
+                  if (exportOptions.copyToClipboard && res.data.data)
+                    handleCopyUrls(
+                      res.data.data.imageUrls.map((item) => {
+                        return item.large;
+                      }),
+                    );
+
+                  if (!exportOptions.noOpenOptionsPage) {
+                    openWebPage(
+                      `/Options/options.html?tabUuid=${res.data.tabUuid}`,
+                    );
+                  }
+
+                  return true;
                 }
-              }
-            });
+                return notifyError(res.data.result);
+              })
+              .catch((e) => {
+                return console.error(e);
+              });
+          }
+
+          return console.log("tab.id not found");
         }
+
+        return notifyError("something strange");
       })
-      .catch((err) => {
-        notifyError(err);
+      .catch((e) => {
+        return console.error(e);
       });
+
+    return notifyError("well this is the end");
   }
 
   const handleChange =
@@ -163,7 +191,6 @@ const Popup: FC = () => {
           .then((tabs) => {
             const tab = tabs[0];
             if (tab && tab.id) {
-              console.log("change setoptions - handleChange");
               browser.tabs.sendMessage<ExtensionMessage>(tab.id, {
                 type: "SET_OPTIONS",
                 data: newOptions,
@@ -212,20 +239,24 @@ const Popup: FC = () => {
         </div>
       )}
       <div className={styles.options}>
-        <h3>Options</h3>
-        {exportOptionsList.map(({ key, label }) => (
-          <label key={key} style={{ display: "block", marginBottom: 8 }}>
-            <input
-              type="checkbox"
-              checked={exportOptions[key]}
-              onChange={handleChange(key)}
-            />
-            {label}
-          </label>
-        ))}
+        <details>
+          <summary>
+            <h3>Options</h3>
+          </summary>
+          {exportOptionsList.map(({ key, label }) => (
+            <label key={key} style={{ display: "block", marginBottom: 8 }}>
+              <input
+                type="checkbox"
+                checked={exportOptions[key]}
+                onChange={handleChange(key)}
+              />
+              {label}
+            </label>
+          ))}
+        </details>
       </div>
 
-      {arrayMainData.map((item, index) => {
+      {arrayOwerMainData.map((item, index) => {
         return (
           <Button
             key={`mainButtom-${index}`}
@@ -241,6 +272,29 @@ const Popup: FC = () => {
           </Button>
         );
       })}
+
+      <details>
+        <summary>
+          <h3>ower website</h3>
+        </summary>
+        {arraySiteMainData.map((item, index) => {
+          return (
+            <Button
+              key={`mainButtom-${index}`}
+              onClick={() => {
+                handleGrabImages({
+                  siteName: item.title,
+                  selector: item.selector,
+                });
+              }}
+              title={item.title}
+            >
+              {item.textButtom}
+            </Button>
+          );
+        })}
+      </details>
+
       <div className={styles.line} />
       <div className={styles.history}>
         <div>
@@ -278,7 +332,7 @@ const Popup: FC = () => {
                   <button
                     className={styles.historyBtn}
                     onClick={(): Promise<Tabs.Tab> =>
-                      openWebPage(`/Options/options.html?TabId=${tabId}`)
+                      openWebPage(`/Options/options.html?tabUuid=${tabId}`)
                     }
                     title={"open gallery page"}
                   >
@@ -305,7 +359,7 @@ const Popup: FC = () => {
             )),
           )}
       </div>
-      <ToastContainer autoClose={2000} />
+      <ToastContainer autoClose={3000} />
     </section>
   );
 };

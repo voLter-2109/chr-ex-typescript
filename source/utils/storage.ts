@@ -46,7 +46,6 @@ export async function getStorage(
 ): Promise<TSaveImage[] | undefined>;
 export async function getStorage(key: "options" | "saveImage") {
   const result = await browser.storage.local.get(key);
-  console.log(result[key]);
   return result[key];
 }
 
@@ -58,9 +57,9 @@ export async function clearAllStorage(): Promise<void> {
 }
 
 /**
- * Получить только те изображения, где хотя бы 2 imageUrls (по заданию).
+ * Получить только те изображения, где хотя бы 2 сохраненных фотографии в imageUrls.
  */
-export async function handleStorageChanged() {
+export async function getSaveImageGallery() {
   const res = await getStorage("saveImage");
   if (!res) return []; // если хранилище пустое
 
@@ -77,27 +76,31 @@ export async function getOptions() {
 }
 
 /**
- * Найти объект по tabId среди сохранённых в saveImage
- * @param tabId - число-ключ поиска
- * @returns StorageSchema или undefined
+ * Найти объект по tabId среди сохранённых в saveImage (по ключу записи { key: value }).
+ * Поддерживает saveImage как объект или как массив объектов.
  */
 export async function getSaveImageByTabId(
-  tabId: number,
+  tabId: string,
 ): Promise<StorageSchema | undefined> {
-  const arr = await browser.storage.local.get("saveImage");
+  const saveImage = await getStorage("saveImage");
 
-  // Гарантия, что если поле не найдено или не массив — будет пустой массив.
-  const saveImageArr: TSaveImage[] = Array.isArray(arr.saveImage)
-    ? arr.saveImage
-    : [];
+  if (!saveImage) return undefined;
 
-  const tabIdKey = Number(tabId);
+  // Вариант 1: saveImage — объект { [tabUuid]: saveData }
+  if (!Array.isArray(saveImage)) {
+    return saveImage[tabId];
+  }
 
-  for (const recordObj of saveImageArr) {
-    // доступ по строковому ключу!
-    if (recordObj.hasOwnProperty(tabIdKey)) {
-      return recordObj[tabIdKey];
+  // Вариант 2: saveImage — массив объектов [{ [tabUuid]: saveData }, ...]
+  for (const recordObj of saveImage) {
+    if (
+      recordObj &&
+      typeof recordObj === "object" &&
+      Object.prototype.hasOwnProperty.call(recordObj, tabId)
+    ) {
+      return recordObj[tabId];
     }
   }
+
   return undefined;
 }

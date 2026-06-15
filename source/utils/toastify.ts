@@ -6,7 +6,6 @@ export const notifyError = (str: string) => toast.error(`😲${str}`);
 
 export const handleCopyUrls = (arrayUrls: string[]) => {
   copyUrlsToClipboard(arrayUrls).then((res) => {
-    console.log(res);
     return res ? notifySuccess("success") : notifyError("Something went wrong");
   });
 };
