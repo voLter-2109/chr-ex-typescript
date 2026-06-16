@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import { ImagePair, StorageSchema } from "../types/storage";
 import { getSaveImageGallery, setStorage } from "./storage";
 
@@ -24,11 +25,9 @@ function imagesEqual(a: ImagePair[] = [], b: ImagePair[] = []): boolean {
  * @param payload объект вида { [tabUuid]: saveData }
  * @returns true — если сохранили; false — если нашли совпадение и не сохраняли.
  */
-export async function saveIfUnique(payload: {
-  uuid: string;
-  saveData: StorageSchema;
-}): Promise<boolean> {
-  const { saveData, uuid } = payload;
+export async function saveIfUnique(
+  saveData: StorageSchema,
+): Promise<{ saveData: StorageSchema; checkUnique: boolean }> {
   const incomingImages = saveData.imageUrls;
 
   // 1) Получаем уже сохранённые данные
@@ -39,15 +38,17 @@ export async function saveIfUnique(payload: {
     for (const value of Object.values(recordObj)) {
       const existingImages = value?.imageUrls ?? [];
       if (imagesEqual(existingImages, incomingImages)) {
-        return false; // совпадение найдено — не сохраняем
+        return { saveData: value, checkUnique: true }; // совпадение найдено — не сохраняем
       }
     }
   }
 
-  // 3) Совпадений нет — сохраняем
+  const uuid = uuidv4();
+
+  // 3) Совпадений нет — сохраняем 1
   await setStorage({
-    saveImage: { [uuid]: saveData },
+    saveImage: { [uuid]: { ...saveData, uuid: uuid } },
   });
 
-  return true;
+  return { saveData: saveData, checkUnique: false };
 }

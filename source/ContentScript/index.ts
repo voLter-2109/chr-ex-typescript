@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 import browser from "webextension-polyfill";
 import {
   ExtensionMessage,
@@ -6,6 +5,7 @@ import {
   PageInfo,
   PageInfoResponseMessage,
 } from "../types/messages";
+import { StorageSchema } from "../types/storage";
 import getGrabImage from "../utils/getGrabImage";
 import { saveIfUnique } from "../utils/saveIfUnique";
 import { setStorage } from "../utils/storage";
@@ -51,11 +51,24 @@ browser.runtime.onMessage.addListener(async (message: unknown) => {
 
     if (msg.type === "GRAB_IMAGES_INFO") {
       const result = getGrabImage(msg.data);
-      const tabUuid = uuidv4();
-      let checkUnique = false;
+      console.log(result);
+      const sD: {
+        tabUuid: string;
+        data: StorageSchema | null;
+        checkUnique: boolean;
+      } = {
+        tabUuid: "",
+        data: null,
+        checkUnique: false,
+      };
+
       if (result.success && result.saveData) {
-        saveIfUnique({ saveData: result.saveData, uuid: tabUuid }).then(
-          (res) => (checkUnique = res),
+        await saveIfUnique(result.saveData).then(
+          ({ checkUnique, saveData }) => {
+            sD.checkUnique = checkUnique;
+            sD.data = saveData;
+            sD.tabUuid = saveData.uuid;
+          },
         );
       }
 
@@ -64,11 +77,10 @@ browser.runtime.onMessage.addListener(async (message: unknown) => {
         data: {
           success: result.success,
           result: result.result,
-          tabUuid: tabUuid,
-          data: result.saveData || null,
-          checkUnique,
+          ...sD,
         },
       };
+
       return res;
     }
 

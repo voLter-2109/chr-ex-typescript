@@ -128,7 +128,7 @@ const Popup: FC = () => {
                 data: {
                   selector,
                   siteName,
-                  tabId: tab.id,
+                  uuid: "",
                   title: tab.title || "Unknown",
                   tabUrl: tab.url || "Unknown",
                   faviconIconUrl: tab.favIconUrl || "",
@@ -152,7 +152,16 @@ const Popup: FC = () => {
                       }),
                     );
 
-                  if (!exportOptions.noOpenOptionsPage) {
+                  if (res.data.checkUnique) {
+                    confirm() &&
+                      openWebPage(
+                        `/Options/options.html?tabUuid=${res.data.tabUuid}`,
+                      );
+                  }
+                  if (
+                    !exportOptions.noOpenOptionsPage &&
+                    !res.data.checkUnique
+                  ) {
                     openWebPage(
                       `/Options/options.html?tabUuid=${res.data.tabUuid}`,
                     );
@@ -160,7 +169,7 @@ const Popup: FC = () => {
 
                   return true;
                 }
-                return notifyError(res.data.result);
+                return notifyError(res?.data?.result || "error");
               })
               .catch((e) => {
                 return console.error(e);

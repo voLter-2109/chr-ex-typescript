@@ -1,7 +1,7 @@
 export type ImagePair = { large: string; small: string };
 
 export interface StorageSchema {
-  tabId: number;
+  uuid: string;
   title: string;
   tabUrl: string;
   faviconIconUrl: string;
