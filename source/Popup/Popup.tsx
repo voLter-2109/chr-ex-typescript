@@ -69,6 +69,15 @@ const mainOwerDataFunction: TMainDataProps = {
   },
 };
 
+function isGrabImagesResponse(x: unknown): x is GrabImagesResponseMessage {
+  return (
+    !!x &&
+    typeof x === "object" &&
+    typeof (x as any).type === "string" &&
+    typeof (x as any).data === "object"
+  );
+}
+
 const Popup: FC = () => {
   const [tabInfo, setTabInfo] = useState<TabData | null>(null);
   const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
@@ -134,42 +143,43 @@ const Popup: FC = () => {
                   faviconIconUrl: tab.favIconUrl || "",
                 },
               })
-              .then((response: unknown) => {
-                const res = response as GrabImagesResponseMessage;
-                if (
-                  res.type === "GRAB_IMAGES_INFO_RESPONSE" &&
-                  res.data.success &&
-                  res.data.data?.imageUrls
-                ) {
-                  console.log("GRAB_IMAGES_INFO_RESPONSE");
-                  console.log(res);
-                  getSaveImageGallery().then(setStorage);
-
-                  if (exportOptions.copyToClipboard && res.data.data)
-                    handleCopyUrls(
-                      res.data.data.imageUrls.map((item) => {
-                        return item.large;
-                      }),
-                    );
-
-                  if (res.data.checkUnique) {
-                    confirm() &&
-                      openWebPage(
-                        `/Options/options.html?tabUuid=${res.data.tabUuid}`,
-                      );
-                  }
-                  if (
-                    !exportOptions.noOpenOptionsPage &&
-                    !res.data.checkUnique
-                  ) {
-                    openWebPage(
-                      `/Options/options.html?tabUuid=${res.data.tabUuid}`,
-                    );
-                  }
-
-                  return true;
+              .then(async (response: unknown) => {
+                if (!isGrabImagesResponse(response)) {
+                  return notifyError(
+                    (response as any)?.data?.result || "error",
+                  );
                 }
-                return notifyError(res?.data?.result || "error");
+                console.log("response");
+                console.log(response);
+                const { type, data } = response;
+
+                // Ранние выходы на неуспешные/неподходящие ответы
+                if (type !== "GRAB_IMAGES_INFO_RESPONSE") {
+                  return notifyError(data?.result || "error");
+                }
+                if (!data?.success || !data?.data?.imageUrls?.length) {
+                  return notifyError(data?.result || "error");
+                }
+
+                console.log("GRAB_IMAGES_INFO_RESPONSE", response);
+
+                if (exportOptions.copyToClipboard) {
+                  handleCopyUrls(data.data.imageUrls.map((i) => i.large));
+                }
+
+                const optionsUrl = `/Options/options.html?tabUuid=${data.tabUuid}`;
+                // Единая точка решения об открытии страницы
+                if (
+                  data.checkUnique
+                    ? confirm(
+                        "A post with such photos has already been saved, open a previously collected gallery?",
+                      )
+                    : !exportOptions.noOpenOptionsPage
+                ) {
+                  openWebPage(optionsUrl);
+                }
+
+                return true;
               })
               .catch((e) => {
                 return console.error(e);

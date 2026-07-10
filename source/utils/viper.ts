@@ -17,6 +17,8 @@ function fixImageUrl(imageSrc: string, index: number): string {
       .replace("/thumbs/", "/images/")
       .replace("t1.", "img1.")
       .replace("t2.", "img2.");
+  } else if (imageSrc.includes("/imx.to/upload/small/")) {
+    return imageSrc.replace("/imx.to/upload/small/", "/image.imx.to/u/i/");
   } else if (imageSrc.includes("/t/")) {
     return imageSrc.replace("/t/", "/i/");
   } else if (imageSrc.includes("/:small/")) {

@@ -27,7 +27,7 @@ function imagesEqual(a: ImagePair[] = [], b: ImagePair[] = []): boolean {
  */
 export async function saveIfUnique(
   saveData: StorageSchema,
-): Promise<{ saveData: StorageSchema; checkUnique: boolean }> {
+): Promise<{ saveData: StorageSchema; checkUnique: boolean; tabUuid: string }> {
   const incomingImages = saveData.imageUrls;
 
   // 1) Получаем уже сохранённые данные
@@ -38,7 +38,7 @@ export async function saveIfUnique(
     for (const value of Object.values(recordObj)) {
       const existingImages = value?.imageUrls ?? [];
       if (imagesEqual(existingImages, incomingImages)) {
-        return { saveData: value, checkUnique: true }; // совпадение найдено — не сохраняем
+        return { saveData: value, checkUnique: true, tabUuid: value.uuid }; // совпадение найдено — не сохраняем
       }
     }
   }
@@ -49,6 +49,7 @@ export async function saveIfUnique(
   await setStorage({
     saveImage: { [uuid]: { ...saveData, uuid: uuid } },
   });
-
-  return { saveData: saveData, checkUnique: false };
+  console.log("setStorage");
+  console.log({ ...saveData, uuid: uuid });
+  return { saveData: saveData, checkUnique: false, tabUuid: uuid };
 }

@@ -52,24 +52,19 @@ browser.runtime.onMessage.addListener(async (message: unknown) => {
     if (msg.type === "GRAB_IMAGES_INFO") {
       const result = getGrabImage(msg.data);
       console.log(result);
-      const sD: {
-        tabUuid: string;
-        data: StorageSchema | null;
-        checkUnique: boolean;
-      } = {
+      const sD = {
         tabUuid: "",
-        data: null,
+        data: null as StorageSchema | null,
         checkUnique: false,
       };
 
       if (result.success && result.saveData) {
-        await saveIfUnique(result.saveData).then(
-          ({ checkUnique, saveData }) => {
-            sD.checkUnique = checkUnique;
-            sD.data = saveData;
-            sD.tabUuid = saveData.uuid;
-          },
+        const { checkUnique, saveData, tabUuid } = await saveIfUnique(
+          result.saveData,
         );
+        sD.checkUnique = checkUnique;
+        sD.data = saveData; // тут уже есть saveData.uuid
+        sD.tabUuid = tabUuid; // и явно полученный uuid ключа
       }
 
       const res: GrabImagesResponseMessage = {
