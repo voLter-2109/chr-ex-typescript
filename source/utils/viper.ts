@@ -7,6 +7,7 @@ const excludeExts = ["gif"];
  * Возвращает true, если url оканчивается на запрещённое расширение
  */
 function hasExcludedExt(url: string, extensions: string[]): boolean {
+  console.log(url)
   return extensions.some((ext) => url.toLowerCase().endsWith(`.${ext}`));
 }
 
@@ -36,17 +37,17 @@ export default function getVipergirlsImages(props: GrabInfoMessage): {
 } {
   const { selector } = props;
 
-  let images: HTMLImageElement[] = Array.from(
-    document.querySelectorAll<HTMLImageElement>(selector),
+  let link: HTMLAnchorElement[] = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>(selector),
   );
 
-  if (!images.length) {
-    images = Array.from(
-      document.querySelectorAll<HTMLImageElement>("img"),
+  if (!link.length) {
+    link = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>("img"),
     ).filter((img) => img.closest('[id^="post_message_"]') !== null);
   }
 
-  if (!images.length) {
+  if (!link.length) {
     return {
       success: false,
       result: "image not found",
@@ -54,7 +55,7 @@ export default function getVipergirlsImages(props: GrabInfoMessage): {
     };
   }
 
-  const srcArr = [...new Set(images.map((i) => i.src))];
+  const srcArr = [...new Set((link).map((i) => i.href))];
   const urls = srcArr.reduce<ImagePair[]>((acc, image, index) => {
     if (!hasExcludedExt(image, excludeExts)) {
       const newUrl = fixImageUrl(image, index);

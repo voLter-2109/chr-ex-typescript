@@ -55,8 +55,8 @@ const mainSiteDataFunction: TMainDataProps = {
   viper: {
     title: "viper",
     textButtom: "viper",
-    selector: "blockquote img",
-    closest: ['[id^="post_message_"]'],
+    selector: "#photos a",
+    closest: null,
   },
 };
 
@@ -313,7 +313,7 @@ const Popup: FC = () => {
           );
         })}
       </details>
-
+      
       <div className={styles.line} />
       <div className={styles.history}>
         <div>
